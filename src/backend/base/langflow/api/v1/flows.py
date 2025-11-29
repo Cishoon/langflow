@@ -317,6 +317,41 @@ async def read_public_flow(
     return await read_flow(session=session, flow_id=flow_id, current_user=current_user)
 
 
+@router.get("/public/", response_model=Page[FlowRead], status_code=200)
+async def read_public_flows(
+    *,
+    session: DbSession,
+    params: Annotated[Params, Depends()],
+    components_only: bool = False,
+):
+    """Retrieve a paginated list of all public flows.
+
+    Args:
+        session (Session): The database session.
+        params (Params): Pagination parameters (page, size).
+        components_only (bool, optional): Whether to return only components. Defaults to False.
+
+    Returns:
+        Page[FlowRead]: A paginated response containing public flows.
+    """
+    try:
+        stmt = select(Flow).where(Flow.access_type == AccessTypeEnum.PUBLIC)
+
+        if components_only:
+            stmt = stmt.where(Flow.is_component == True)  # noqa: E712
+
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=DeprecationWarning, module=r"fastapi_pagination\.ext\.sqlalchemy"
+            )
+            return await apaginate(session, stmt, params=params)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @router.patch("/{flow_id}", response_model=FlowRead, status_code=200)
 async def update_flow(
     *,
