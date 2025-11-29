@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AlertDropdown from "@/alerts/alertDropDown";
+import CustomLogo from "@/assets/CustomLogo.svg?react";
 import DataStaxLogo from "@/assets/DataStaxLogo.svg?react";
-import LangflowLogo from "@/assets/LangflowLogo.svg?react";
 import { AssistantButton } from "@/components/common/assistant";
 import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import ShadTooltip from "@/components/common/shadTooltipComponent";
@@ -18,10 +18,13 @@ import {
 import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
 import useTheme from "@/customization/hooks/use-custom-theme";
 import useAlertStore from "@/stores/alertStore";
+import useAuthStore from "@/stores/authStore";
 import FlowMenu from "./components/FlowMenu";
 
 export default function AppHeader(): JSX.Element {
   const notificationCenter = useAlertStore((state) => state.notificationCenter);
+  const userData = useAuthStore((state) => state.userData);
+  const username = userData?.username ?? "User";
   const navigate = useCustomNavigate();
   const [activeState, setActiveState] = useState<"notifications" | null>(null);
   const notificationRef = useRef<HTMLButtonElement | null>(null);
@@ -55,7 +58,7 @@ export default function AppHeader(): JSX.Element {
 
   return (
     <div
-      className={`z-10 flex h-[48px] w-full items-center justify-between border-b pr-5 pl-2.5 dark:bg-background`}
+      className={`z-10 flex h-[48px] w-full items-center justify-between border-b pr-5 pl-5 dark:bg-background`}
       data-testid="app-header"
     >
       {/* Left Section */}
@@ -66,13 +69,13 @@ export default function AppHeader(): JSX.Element {
         <Button
           unstyled
           onClick={() => navigate("/")}
-          className="mr-1 flex h-8 w-8 items-center"
+          className="mr-1 flex h-8 items-center"
           data-testid="icon-ChevronLeft"
         >
           {ENABLE_DATASTAX_LANGFLOW ? (
             <DataStaxLogo className="fill-black dark:fill-[white]" />
           ) : (
-            <LangflowLogo className="h-5 w-5" />
+            <CustomLogo className="h-8" />
           )}
         </Button>
         {ENABLE_DATASTAX_LANGFLOW && (
@@ -146,7 +149,8 @@ export default function AppHeader(): JSX.Element {
           className="my-auto h-7 dark:border-zinc-700"
         />
 
-        <div className="flex">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-foreground">{username}</span>
           <CustomAccountMenu />
         </div>
       </div>
