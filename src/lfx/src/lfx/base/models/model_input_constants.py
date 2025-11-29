@@ -199,9 +199,36 @@ def _get_sambanova_inputs_and_fields():
     return sambanova_inputs, create_input_fields_dict(sambanova_inputs, "")
 
 
+def _get_qwen_inputs_and_fields():
+    try:
+        from lfx.components.qwen.qwen import QwenModelComponent
+
+        qwen_inputs = get_filtered_inputs(QwenModelComponent)
+    except ImportError as e:
+        msg = "Qwen component not found."
+        raise ImportError(msg) from e
+    return qwen_inputs, create_input_fields_dict(qwen_inputs, "")
+
+
 MODEL_PROVIDERS_DICT: dict[str, ModelProvidersDict] = {}
 
 # Try to add each provider
+# Qwen is added first as the default provider
+try:
+    from lfx.components.qwen.qwen import QwenModelComponent
+
+    qwen_inputs, qwen_fields = _get_qwen_inputs_and_fields()
+    MODEL_PROVIDERS_DICT["Qwen"] = {
+        "fields": qwen_fields,
+        "inputs": qwen_inputs,
+        "prefix": "",
+        "component_class": QwenModelComponent(),
+        "icon": QwenModelComponent.icon,
+        "is_active": True,
+    }
+except ImportError:
+    pass
+
 try:
     from lfx.components.openai.openai_chat_model import OpenAIModelComponent
 
@@ -373,6 +400,6 @@ MODEL_DYNAMIC_UPDATE_FIELDS = [
 
 MODELS_METADATA = {name: {"icon": prov["icon"]} for name, prov in ACTIVE_MODEL_PROVIDERS_DICT.items()}
 
-MODEL_PROVIDERS_LIST = ["Anthropic", "Google Generative AI", "OpenAI", "IBM watsonx.ai", "Ollama"]
+MODEL_PROVIDERS_LIST = ["Qwen", "OpenAI", "Anthropic", "Google Generative AI", "IBM watsonx.ai", "Ollama"]
 
 MODEL_OPTIONS_METADATA = [MODELS_METADATA[key] for key in MODEL_PROVIDERS_LIST if key in MODELS_METADATA]

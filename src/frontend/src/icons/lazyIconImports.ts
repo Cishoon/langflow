@@ -371,6 +371,7 @@ export const lazyIconsMapping = {
     import("@/icons/QianFanChat").then((mod) => ({
       default: mod.QianFanChatIcon,
     })),
+  Qwen: () => import("@/icons/Qwen").then((mod) => ({ default: mod.QwenIcon })),
   Redis: () =>
     import("@/icons/Redis").then((mod) => ({ default: mod.RedisIcon })),
   Reddit: () =>

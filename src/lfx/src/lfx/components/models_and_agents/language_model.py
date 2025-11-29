@@ -21,6 +21,14 @@ from lfx.log.logger import logger
 from lfx.schema.dotdict import dotdict
 from lfx.utils.util import transform_localhost_url
 
+# Qwen (通义千问) constants
+QWEN_MODELS = [
+    "qwen-plus",
+    "qwen3-max",
+    "qwen-flash",
+]
+QWEN_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
 # IBM watsonx.ai constants
 IBM_WATSONX_DEFAULT_MODELS = ["ibm/granite-3-2b-instruct", "ibm/granite-3-8b-instruct", "ibm/granite-13b-instruct-v2"]
 IBM_WATSONX_URLS = [
@@ -68,11 +76,12 @@ class LanguageModelComponent(LCModelComponent):
         DropdownInput(
             name="provider",
             display_name="Model Provider",
-            options=["OpenAI", "Anthropic", "Google", "IBM watsonx.ai", "Ollama"],
-            value="OpenAI",
+            options=["Qwen", "OpenAI", "Anthropic", "Google", "IBM watsonx.ai", "Ollama"],
+            value="Qwen",
             info="Select the model provider",
             real_time_refresh=True,
             options_metadata=[
+                {"icon": "Qwen"},
                 {"icon": "OpenAI"},
                 {"icon": "Anthropic"},
                 {"icon": "GoogleGenerativeAI"},
@@ -83,15 +92,15 @@ class LanguageModelComponent(LCModelComponent):
         DropdownInput(
             name="model_name",
             display_name="Model Name",
-            options=OPENAI_CHAT_MODEL_NAMES + OPENAI_REASONING_MODEL_NAMES,
-            value=OPENAI_CHAT_MODEL_NAMES[0],
+            options=QWEN_MODELS,
+            value=QWEN_MODELS[0],
             info="Select the model to use",
             real_time_refresh=True,
             refresh_button=True,
         ),
         SecretStrInput(
             name="api_key",
-            display_name="OpenAI API Key",
+            display_name="Qwen API Key",
             info="Model Provider API key",
             required=False,
             show=True,
@@ -156,6 +165,20 @@ class LanguageModelComponent(LCModelComponent):
         temperature = self.temperature
         stream = self.stream
 
+        if provider == "Qwen":
+            if not self.api_key:
+                msg = "Qwen API key is required when using Qwen provider"
+                raise ValueError(msg)
+            api_key_value = (
+                SecretStr(self.api_key).get_secret_value() if isinstance(self.api_key, SecretStr) else str(self.api_key)
+            )
+            return ChatOpenAI(
+                model_name=model_name,
+                temperature=temperature,
+                streaming=stream,
+                openai_api_key=api_key_value,
+                openai_api_base=QWEN_API_BASE,
+            )
         if provider == "OpenAI":
             if not self.api_key:
                 msg = "OpenAI API key is required when using OpenAI provider"
@@ -244,7 +267,15 @@ class LanguageModelComponent(LCModelComponent):
         self, build_config: dotdict, field_value: Any, field_name: str | None = None
     ) -> dotdict:
         if field_name == "provider":
-            if field_value == "OpenAI":
+            if field_value == "Qwen":
+                build_config["model_name"]["options"] = QWEN_MODELS
+                build_config["model_name"]["value"] = QWEN_MODELS[0]
+                build_config["api_key"]["display_name"] = "Qwen API Key"
+                build_config["api_key"]["show"] = True
+                build_config["base_url_ibm_watsonx"]["show"] = False
+                build_config["project_id"]["show"] = False
+                build_config["ollama_base_url"]["show"] = False
+            elif field_value == "OpenAI":
                 build_config["model_name"]["options"] = OPENAI_CHAT_MODEL_NAMES + OPENAI_REASONING_MODEL_NAMES
                 build_config["model_name"]["value"] = OPENAI_CHAT_MODEL_NAMES[0]
                 build_config["api_key"]["display_name"] = "OpenAI API Key"
