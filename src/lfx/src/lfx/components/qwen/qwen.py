@@ -8,7 +8,13 @@ from lfx.field_typing.range_spec import RangeSpec
 from lfx.inputs.inputs import BoolInput, DictInput, DropdownInput, IntInput, SecretStrInput, SliderInput, StrInput
 
 # Qwen model list - https://help.aliyun.com/zh/model-studio/getting-started/models
-QWEN_MODELS = ["qwen-plus", "qwen3-max", "qwen-flash"]
+QWEN_MODELS = [
+    "qwen-plus",
+    "qwen3-vl-plus",
+    "qwen3-vl-flash",
+    "qwen3-max",
+    "qwen-flash",
+]
 
 # Default API base for Qwen (DashScope OpenAI-compatible endpoint)
 QWEN_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"

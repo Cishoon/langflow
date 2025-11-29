@@ -27,6 +27,7 @@ import {
   scapedJSONStringfy,
   scapeJSONParse,
 } from "../../../../utils/reactflowUtils";
+import { nodeColorsName } from "../../../../utils/styleUtils";
 import {
   cn,
   logFirstMessage,
@@ -34,7 +35,6 @@ import {
   logTypeIsError,
   logTypeIsUnknown,
 } from "../../../../utils/utils";
-import { nodeColorsName } from "../../../../utils/styleUtils";
 import HandleRenderComponent from "../handleRenderComponent";
 import OutputComponent from "../OutputComponent";
 import OutputModal from "../outputModal";

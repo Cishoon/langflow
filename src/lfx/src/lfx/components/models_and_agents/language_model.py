@@ -24,6 +24,8 @@ from lfx.utils.util import transform_localhost_url
 # Qwen (通义千问) constants
 QWEN_MODELS = [
     "qwen-plus",
+    "qwen3-vl-plus",
+    "qwen3-vl-flash",
     "qwen3-max",
     "qwen-flash",
 ]
