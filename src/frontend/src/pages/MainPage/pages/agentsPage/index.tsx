@@ -3,7 +3,7 @@ import ForwardedIconComponent from "@/components/common/genericIconComponent";
 import PaginatorComponent from "@/components/common/paginatorComponent";
 import CardsWrapComponent from "@/components/core/cardsWrapComponent";
 import { useGetPublicFlowsQuery } from "@/controllers/API/queries/flows/use-get-public-flows";
-import AgentCard from "./components/agent-card";
+import Agent3DCard from "./components/agent-3d-card";
 import ListSkeleton from "../../components/listSkeleton";
 
 const AgentsPage = () => {
@@ -71,9 +71,9 @@ const AgentsPage = () => {
               </div>
             ) : (
               <div className="flex h-full flex-col">
-                <div className="flex flex-col gap-1">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {flows.map((flow) => (
-                    <AgentCard key={flow.id} flowData={flow} />
+                    <Agent3DCard key={flow.id} flowData={flow} />
                   ))}
                 </div>
               </div>
