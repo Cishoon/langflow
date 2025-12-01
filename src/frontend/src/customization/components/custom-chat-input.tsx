@@ -5,6 +5,7 @@ export const CustomChatInput = ({
   sendMessage,
   inputRef,
   noInput,
+  audioOnly,
   files,
   setFiles,
   isDragging,
@@ -15,6 +16,7 @@ export const CustomChatInput = ({
       sendMessage={sendMessage}
       inputRef={inputRef}
       noInput={noInput}
+      audioOnly={audioOnly}
       files={files}
       setFiles={setFiles}
       isDragging={isDragging}

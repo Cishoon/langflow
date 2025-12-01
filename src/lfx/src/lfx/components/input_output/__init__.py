@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from lfx.components._importing import import_mod
 
 if TYPE_CHECKING:
+    from lfx.components.input_output.audio import AudioInput
     from lfx.components.input_output.chat import ChatInput
     from lfx.components.input_output.chat_output import ChatOutput
     from lfx.components.input_output.text import TextInputComponent
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
     from lfx.components.input_output.webhook import WebhookComponent
 
 _dynamic_imports = {
+    "AudioInput": "audio",
     "ChatInput": "chat",
     "ChatOutput": "chat_output",
     "TextInputComponent": "text",
@@ -19,7 +21,7 @@ _dynamic_imports = {
     "WebhookComponent": "webhook",
 }
 
-__all__ = ["ChatInput", "ChatOutput", "TextInputComponent", "TextOutputComponent", "WebhookComponent"]
+__all__ = ["AudioInput", "ChatInput", "ChatOutput", "TextInputComponent", "TextOutputComponent", "WebhookComponent"]
 
 
 def __getattr__(attr_name: str) -> Any:

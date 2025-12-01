@@ -48,6 +48,7 @@ class ResultData(BaseModel):
 
 
 class InterfaceComponentTypes(str, Enum, metaclass=ContainsEnumMeta):
+    AudioInput = "AudioInput"
     ChatInput = "ChatInput"
     ChatOutput = "ChatOutput"
     TextInput = "TextInput"
@@ -59,6 +60,7 @@ class InterfaceComponentTypes(str, Enum, metaclass=ContainsEnumMeta):
 CHAT_COMPONENTS = [InterfaceComponentTypes.ChatInput, InterfaceComponentTypes.ChatOutput]
 RECORDS_COMPONENTS = [InterfaceComponentTypes.DataOutput]
 INPUT_COMPONENTS = [
+    InterfaceComponentTypes.AudioInput,
     InterfaceComponentTypes.ChatInput,
     InterfaceComponentTypes.WebhookInput,
     InterfaceComponentTypes.TextInput,

@@ -19,6 +19,7 @@ import type {
   ChatInputType,
   FilePreviewType,
 } from "../../../../../types/components";
+import AudioInputView from "./components/audio-input-view";
 import InputWrapper from "./components/input-wrapper";
 import NoInputView from "./components/no-input";
 import { VoiceAssistant } from "./components/voice-assistant/voice-assistant";
@@ -29,6 +30,7 @@ export default function ChatInput({
   sendMessage,
   inputRef,
   noInput,
+  audioOnly,
   files,
   setFiles,
   isDragging,
@@ -213,6 +215,18 @@ export default function ChatInput({
         isBuilding={isBuilding}
         sendMessage={sendMessage}
         stopBuilding={stopBuilding}
+      />
+    );
+  }
+
+  if (audioOnly) {
+    return (
+      <AudioInputView
+        isBuilding={isBuilding}
+        sendMessage={sendMessage}
+        stopBuilding={stopBuilding}
+        files={files}
+        setFiles={setFiles}
       />
     );
   }

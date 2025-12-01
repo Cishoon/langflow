@@ -57,6 +57,8 @@ export default function ChatView({
   const isBuilding = useFlowStore((state) => state.isBuilding);
 
   const inputTypes = inputs.map((obj) => obj.type);
+  const hasAudioInput = inputTypes.includes("AudioInput");
+  const hasChatInput = inputTypes.includes("ChatInput");
   const updateFlowPool = useFlowStore((state) => state.updateFlowPool);
   const setChatValueStore = useUtilityStore((state) => state.setChatValueStore);
   const isTabHidden = useTabVisibility();
@@ -232,7 +234,8 @@ export default function ChatView({
       <div className="m-auto w-full max-w-[768px] md:w-5/6">
         <CustomChatInput
           playgroundPage={!!playgroundPage}
-          noInput={!inputTypes.includes("ChatInput")}
+          noInput={!hasChatInput && !hasAudioInput}
+          audioOnly={hasAudioInput && !hasChatInput}
           sendMessage={async ({ repeat, files }) => {
             await sendMessage({ repeat, files });
             track("Playground Message Sent");

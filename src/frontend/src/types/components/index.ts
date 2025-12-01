@@ -548,6 +548,7 @@ export type ChatInputType = {
     current: any;
   };
   noInput: boolean;
+  audioOnly?: boolean;
   sendMessage: ({
     repeat,
     files,
