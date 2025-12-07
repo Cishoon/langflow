@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import Markdown from "react-markdown";
 import rehypeMathjax from "rehype-mathjax/browser";
 import rehypeRaw from "rehype-raw";
@@ -6,6 +7,22 @@ import { EMPTY_OUTPUT_SEND_MESSAGE } from "@/constants/constants";
 import { preprocessChatMessage } from "@/utils/markdownUtils";
 import { cn } from "@/utils/utils";
 import CodeTabsComponent from "../../../../../../components/core/codeTabsComponent";
+
+/**
+ * Detects if content is a complete HTML document/fragment that should be rendered directly.
+ * Matches content that starts with an HTML tag and contains style or complex nested structures.
+ */
+const isCompleteHtmlContent = (text: string): boolean => {
+  const trimmed = text.trim();
+  // Check if it starts with an HTML tag (not a simple inline tag like <b> or <i>)
+  const startsWithBlockTag = /^<(div|section|article|main|header|footer|aside|nav|figure|table|form|fieldset|details|dialog|template)\b/i.test(trimmed);
+  // Check if it contains style tag or complex inline styles with CSS properties
+  const hasComplexStyles = /<style[\s>]|style\s*=\s*["'][^"']*(?:animation|keyframes|transform|gradient|position:\s*(?:absolute|fixed)|display:\s*flex)/i.test(trimmed);
+  // Check if it ends with a closing tag
+  const endsWithClosingTag = /<\/\w+>\s*$/.test(trimmed);
+  
+  return startsWithBlockTag && endsWithClosingTag && hasComplexStyles;
+};
 
 type MarkdownFieldProps = {
   chat: any;
@@ -24,6 +41,29 @@ export const MarkdownField = ({
 }: MarkdownFieldProps) => {
   // Process the chat message to handle <think> tags and clean up tables
   const processedChatMessage = preprocessChatMessage(chatMessage);
+  
+  // Check if this is complete HTML content that should be rendered directly
+  const isRawHtml = isCompleteHtmlContent(chatMessage);
+
+  // If it's raw HTML, render it directly with sanitization
+  if (isRawHtml && !isEmpty) {
+    const sanitizedHtml = DOMPurify.sanitize(chatMessage, {
+      ADD_TAGS: ["style"],
+      ADD_ATTR: ["style"],
+      ALLOW_DATA_ATTR: true,
+    });
+
+    return (
+      <div className="w-full items-baseline gap-2">
+        <div
+          className="w-full max-w-full overflow-visible [&_*]:leading-normal"
+          style={{ lineHeight: "normal" }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+        />
+        {editedFlag}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full items-baseline gap-2">
