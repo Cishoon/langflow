@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from lfx.components.models_and_agents.memory import MemoryComponent
     from lfx.components.models_and_agents.prompt import PromptComponent
     from lfx.components.models_and_agents.speech_to_text import SpeechToTextComponent
+    from lfx.components.models_and_agents.text_to_image import TextToImageComponent
+    from lfx.components.models_and_agents.text_to_speech import TextToSpeechComponent
 
 _dynamic_imports = {
     "AgentComponent": "agent",
@@ -20,6 +22,8 @@ _dynamic_imports = {
     "MCPToolsComponent": "mcp_component",
     "MemoryComponent": "memory",
     "PromptComponent": "prompt",
+    "TextToImageComponent": "text_to_image",
+    "TextToSpeechComponent": "text_to_speech",
     "SpeechToTextComponent": "speech_to_text",
 }
 
@@ -31,6 +35,8 @@ __all__ = [
     "MemoryComponent",
     "PromptComponent",
     "SpeechToTextComponent",
+    "TextToImageComponent",
+    "TextToSpeechComponent",
 ]
 
 

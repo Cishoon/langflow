@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from lfx.components.input_output.audio import AudioInput
     from lfx.components.input_output.chat import ChatInput
     from lfx.components.input_output.chat_output import ChatOutput
+    from lfx.components.input_output.image_input import ImageInput
+    from lfx.components.input_output.image_output import ImageOutput
     from lfx.components.input_output.text import TextInputComponent
     from lfx.components.input_output.text_output import TextOutputComponent
     from lfx.components.input_output.webhook import WebhookComponent
@@ -16,12 +18,23 @@ _dynamic_imports = {
     "AudioInput": "audio",
     "ChatInput": "chat",
     "ChatOutput": "chat_output",
+    "ImageInput": "image_input",
+    "ImageOutput": "image_output",
     "TextInputComponent": "text",
     "TextOutputComponent": "text_output",
     "WebhookComponent": "webhook",
 }
 
-__all__ = ["AudioInput", "ChatInput", "ChatOutput", "TextInputComponent", "TextOutputComponent", "WebhookComponent"]
+__all__ = [
+    "AudioInput",
+    "ChatInput",
+    "ChatOutput",
+    "ImageInput",
+    "ImageOutput",
+    "TextInputComponent",
+    "TextOutputComponent",
+    "WebhookComponent",
+]
 
 
 def __getattr__(attr_name: str) -> Any:

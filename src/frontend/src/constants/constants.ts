@@ -7,9 +7,9 @@ import {
 import { customDefaultShortcuts } from "../customization/constants";
 import type { languageMap } from "../types/components";
 
-const getEnvVar = (key: string, defaultValue: any = undefined) => {
+const getEnvVar = (key: string, defaultValue?: string) => {
   if (typeof process !== "undefined" && process.env) {
-    return process.env[key] ?? defaultValue;
+    return (process.env[key] as string | undefined) ?? defaultValue;
   }
   try {
     return new Function(`return import.meta.env?.${key}`)() ?? defaultValue;
@@ -696,6 +696,8 @@ export const priorityFields = new Set(["code", "template", "mode"]);
 export const INPUT_TYPES = new Set([
   "ChatInput",
   "AudioInput",
+  "ImageInput",
+  "ImageOutput",
   // "TextInput",
   // "KeyPairInput",
   // "JsonInput",
@@ -703,6 +705,7 @@ export const INPUT_TYPES = new Set([
 ]);
 export const OUTPUT_TYPES = new Set([
   "ChatOutput",
+  "ImageOutput",
   // "TextOutput",
   // "PDFOutput",
   // "ImageOutput",
