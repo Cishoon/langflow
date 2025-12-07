@@ -60,8 +60,11 @@ export default function IOModal({
       flowName: state.currentFlow?.name,
     })),
   );
-  const filteredInputs = inputs.filter((input) => input.type !== "ChatInput");
+  const filteredInputs = inputs.filter(
+    (input) => input.type !== "ChatInput" && input.type !== "FormInput",
+  );
   const chatInput = inputs.find((input) => input.type === "ChatInput");
+  const formInput = inputs.find((input) => input.type === "FormInput");
   const filteredOutputs = outputs.filter(
     (output) => output.type !== "ChatOutput",
   );
@@ -71,7 +74,7 @@ export default function IOModal({
       inputs.some((input) => input.id === node.id) ||
       filteredOutputs.some((output) => output.id === node.id),
   );
-  const haveChat = chatInput || chatOutput;
+  const haveChat = chatInput || chatOutput || formInput;
   const setErrorData = useAlertStore((state) => state.setErrorData);
   const setSuccessData = useAlertStore((state) => state.setSuccessData);
   const deleteSession = useMessagesStore((state) => state.deleteSession);
@@ -161,7 +164,7 @@ export default function IOModal({
   }
 
   function startView() {
-    if (!chatInput && !chatOutput) {
+    if (!chatInput && !chatOutput && !formInput) {
       if (filteredInputs.length > 0) {
         return filteredInputs[0];
       } else {
@@ -210,10 +213,12 @@ export default function IOModal({
     }): Promise<void> => {
       if (isBuilding) return;
       setChatValue("");
+      // Use formInput if available, otherwise use chatInput
+      const startNodeId = formInput?.id || chatInput?.id;
       for (let i = 0; i < repeat; i++) {
         await buildFlow({
           input_value: chatValue,
-          startNodeId: chatInput?.id,
+          startNodeId: startNodeId,
           files: files,
           silent: true,
           session: sessionId,
@@ -224,7 +229,7 @@ export default function IOModal({
         });
       }
     },
-    [isBuilding, setIsBuilding, chatValue, chatInput?.id, sessionId, buildFlow],
+    [isBuilding, setIsBuilding, chatValue, chatInput?.id, formInput?.id, sessionId, buildFlow],
   );
 
   useEffect(() => {
