@@ -8,11 +8,9 @@ from lfx.inputs.inputs import BoolInput, TableInput
 from lfx.io import (
     DropdownInput,
     MessageTextInput,
-    MultilineInput,
     Output,
 )
 from lfx.schema.message import Message
-from lfx.template.field.base import Input
 from lfx.utils.constants import (
     MESSAGE_SENDER_NAME_USER,
     MESSAGE_SENDER_USER,
@@ -24,10 +22,11 @@ class FormInput(ChatComponent):
 
     This component enables workflow developers to define multiple labeled input fields
     that users can fill in through the Playground interface, instead of a single text input.
+    Each form field generates its own output that can be connected independently.
     """
 
     display_name = "Form Input"
-    description = "Get structured form inputs from the Playground with multiple labeled fields."
+    description = "Get structured form inputs from the Playground with multiple labeled fields. Each field has its own output."
     documentation: str = "https://docs.langflow.org/form-input"
     icon = "ClipboardList"
     name = "FormInput"
@@ -101,8 +100,7 @@ class FormInput(ChatComponent):
     ]
 
     outputs = [
-        Output(display_name="Form Data", name="form_data", method="form_data_response"),
-        Output(display_name="Combined Text", name="combined_text", method="combined_text_response"),
+        Output(display_name="All Fields", name="all_fields", method="all_fields_response"),
     ]
 
     def update_build_config(self, build_config: dict, field_value: Any, field_name: str | None = None) -> dict:
@@ -161,6 +159,32 @@ class FormInput(ChatComponent):
 
         return build_config
 
+    def update_outputs(self, frontend_node: dict, field_name: str, field_value: Any) -> dict:
+        """Dynamically update outputs when form_fields changes."""
+        if field_name == "form_fields" and field_value:
+            # Start with the base output
+            new_outputs = [
+                Output(display_name="All Fields", name="all_fields", method="all_fields_response"),
+            ]
+
+            # Add an output for each form field
+            for field in field_value:
+                field_internal_name = field.get("name", "")
+                field_label = field.get("label", field_internal_name)
+                if field_internal_name:
+                    output_name = f"output_{field_internal_name}"
+                    new_outputs.append(
+                        Output(
+                            display_name=field_label,
+                            name=output_name,
+                            method="get_field_value",
+                        )
+                    )
+
+            frontend_node["outputs"] = new_outputs
+
+        return frontend_node
+
     def _get_form_values(self) -> dict[str, str]:
         """Extract form field values from the component's dynamic attributes."""
         form_values = {}
@@ -177,8 +201,50 @@ class FormInput(ChatComponent):
                 form_values[field_name] = str(value) if value else ""
         return form_values
 
-    async def form_data_response(self) -> Message:
-        """Return form data as a structured message."""
+    def _get_single_field_value(self, field_name: str) -> str:
+        """Get the value of a single form field."""
+        field_key = f"field_{field_name}"
+        if hasattr(self, field_key):
+            value = getattr(self, field_key, "")
+            if hasattr(value, "text"):
+                value = value.text
+            elif hasattr(value, "data"):
+                value = data_to_text("{text}", value)
+            return str(value) if value else ""
+        return ""
+
+    async def get_field_value(self) -> Message:
+        """Return the value of a specific form field based on the output being called."""
+        # Get the output name that was called
+        output_name = self.selected_output or ""
+
+        # Extract field name from output name (output_fieldname -> fieldname)
+        field_name = output_name.replace("output_", "", 1) if output_name.startswith("output_") else ""
+
+        # Get the field value
+        value = self._get_single_field_value(field_name)
+
+        # Find the field label
+        field_label = field_name
+        for field in self.form_fields:
+            if field.get("name") == field_name:
+                field_label = field.get("label", field_name)
+                break
+
+        session_id = self.session_id or self.graph.session_id or ""
+        message = await Message.create(
+            text=value,
+            sender=self.sender,
+            sender_name=self.sender_name,
+            session_id=session_id,
+            properties={"field_name": field_name, "field_label": field_label},
+        )
+
+        self.status = message
+        return message
+
+    async def all_fields_response(self) -> Message:
+        """Return all form data as a structured message."""
         form_values = self._get_form_values()
 
         # Build a formatted text representation
@@ -202,36 +268,7 @@ class FormInput(ChatComponent):
 
         if session_id and isinstance(message, Message) and self.should_store_message:
             stored_message = await self.send_message(message)
-            self.form_data.value = stored_message
-            message = stored_message
-
-        self.status = message
-        return message
-
-    async def combined_text_response(self) -> Message:
-        """Return all form values combined as a single text message."""
-        form_values = self._get_form_values()
-
-        # Combine all values into a single text
-        text_parts = []
-        for field in self.form_fields:
-            name = field.get("name", "")
-            value = form_values.get(name, "")
-            if value:
-                text_parts.append(str(value))
-
-        text = " ".join(text_parts)
-
-        session_id = self.session_id or self.graph.session_id or ""
-        message = await Message.create(
-            text=text,
-            sender=self.sender,
-            sender_name=self.sender_name,
-            session_id=session_id,
-        )
-
-        if session_id and isinstance(message, Message) and self.should_store_message:
-            stored_message = await self.send_message(message)
+            self.all_fields.value = stored_message
             message = stored_message
 
         self.status = message
