@@ -93,6 +93,13 @@ class QwenModelComponent(LCModelComponent):
             advanced=True,
             value=1,
         ),
+        BoolInput(
+            name="enable_search",
+            display_name="Enable Web Search",
+            info="Enable web search capability for the model. Only supported by certain models like qwen3-max.",
+            advanced=False,
+            value=False,
+        ),
     ]
 
     def get_models(self) -> list[str]:
@@ -147,6 +154,11 @@ class QwenModelComponent(LCModelComponent):
         if hasattr(self, "top_p") and self.top_p is not None:
             model_kwargs["top_p"] = self.top_p
 
+        # Build extra_body for non-standard OpenAI parameters
+        extra_body = {}
+        if hasattr(self, "enable_search") and self.enable_search:
+            extra_body["enable_search"] = True
+
         output = ChatOpenAI(
             model=self.model_name,
             temperature=self.temperature if self.temperature is not None else 0.7,
@@ -156,6 +168,7 @@ class QwenModelComponent(LCModelComponent):
             api_key=api_key_value,
             streaming=self.stream if hasattr(self, "stream") else False,
             seed=self.seed,
+            extra_body=extra_body if extra_body else None,
         )
 
         if self.json_mode:
