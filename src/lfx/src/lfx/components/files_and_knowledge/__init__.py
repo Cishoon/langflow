@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from lfx.components.files_and_knowledge.ingestion import KnowledgeIngestionComponent
     from lfx.components.files_and_knowledge.retrieval import KnowledgeRetrievalComponent
     from lfx.components.files_and_knowledge.save_file import SaveToFileComponent
+    from lfx.components.files_and_knowledge.save_image import SaveImageComponent
 
 
 _dynamic_imports = {
@@ -18,6 +19,7 @@ _dynamic_imports = {
     "KnowledgeIngestionComponent": "ingestion",
     "KnowledgeRetrievalComponent": "retrieval",
     "SaveToFileComponent": "save_file",
+    "SaveImageComponent": "save_image",
 }
 
 __all__ = [
@@ -25,6 +27,7 @@ __all__ = [
     "FileComponent",
     "KnowledgeIngestionComponent",
     "KnowledgeRetrievalComponent",
+    "SaveImageComponent",
     "SaveToFileComponent",
 ]
 

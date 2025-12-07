@@ -22,6 +22,16 @@ import FileCardWrapper from "./components/file-card-wrapper";
 import { EditMessageButton } from "./components/message-options";
 import { convertFiles } from "./helpers/convert-files";
 
+const looksLikeImageUrl = (value: string): boolean => {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  if (lower.startsWith("data:image/")) return true;
+  const base = lower.split("?")[0] || lower;
+  return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"].some((ext) =>
+    base.endsWith(ext),
+  );
+};
+
 export default function ChatMessage({
   chat,
   lastMessage,
@@ -62,13 +72,13 @@ export default function ChatMessage({
     setIsStreaming(true); // Streaming starts
     return new Promise<boolean>((resolve, reject) => {
       eventSource.current = new EventSource(url);
-      eventSource.current.onmessage = (event) => {
+      eventSource.current.onmessage = (event: MessageEvent) => {
         const parsedData = JSON.parse(event.data);
         if (parsedData.chunk) {
           setChatMessage((prev) => prev + parsedData.chunk);
         }
       };
-      eventSource.current.onerror = (event: any) => {
+      eventSource.current.onerror = (event: Event) => {
         setIsStreaming(false);
         eventSource.current?.close();
         setStreamUrl(undefined);
@@ -358,6 +368,14 @@ export default function ChatMessage({
                                 }}
                                 onCancel={() => setEditMessage(false)}
                               />
+                            ) : looksLikeImageUrl(decodedMessage) ? (
+                              <div className="mt-2">
+                                <img
+                                  src={decodedMessage}
+                                  alt="image output"
+                                  className="max-h-[400px] w-auto rounded-md border border-border"
+                                />
+                              </div>
                             ) : (
                               <CustomMarkdownField
                                 isAudioMessage={isAudioMessage}
@@ -367,6 +385,42 @@ export default function ChatMessage({
                                 editedFlag={editedFlag}
                               />
                             )}
+                            {!isEmpty &&
+                              !looksLikeImageUrl(decodedMessage) &&
+                              Array.isArray(chat.files) &&
+                              chat.files.some(
+                                (file: string | { path?: string }) => {
+                                  const path =
+                                    typeof file === "string"
+                                      ? file
+                                      : file?.path;
+                                  return (
+                                    typeof path === "string" &&
+                                    looksLikeImageUrl(path)
+                                  );
+                                },
+                              ) && (
+                                <div className="mt-2">
+                                  <img
+                                    src={
+                                      chat.files
+                                        .map(
+                                          (file: string | { path?: string }) =>
+                                            typeof file === "string"
+                                              ? file
+                                              : file?.path,
+                                        )
+                                        .find((path: string | undefined) =>
+                                          path
+                                            ? looksLikeImageUrl(path)
+                                            : false,
+                                        ) as string
+                                    }
+                                    alt="image output"
+                                    className="max-h-[400px] w-auto rounded-md border border-border"
+                                  />
+                                </div>
+                              )}
                           </div>
                         )}
                       </div>
@@ -388,16 +442,55 @@ export default function ChatMessage({
                     />
                   ) : (
                     <>
-                      <div
-                        className={cn(
-                          "w-full items-baseline whitespace-pre-wrap break-words text-sm font-normal",
-                          isEmpty ? "text-muted-foreground" : "text-primary",
+                      {!looksLikeImageUrl(decodedMessage) && (
+                        <div
+                          className={cn(
+                            "w-full items-baseline whitespace-pre-wrap break-words text-sm font-normal",
+                            isEmpty ? "text-muted-foreground" : "text-primary",
+                          )}
+                          data-testid={`chat-message-${chat.sender_name}-${chatMessage}`}
+                        >
+                          {isEmpty ? EMPTY_INPUT_SEND_MESSAGE : decodedMessage}
+                          {editedFlag}
+                        </div>
+                      )}
+                      {!isEmpty && looksLikeImageUrl(decodedMessage) && (
+                        <div className="mt-2">
+                          <img
+                            src={decodedMessage}
+                            alt="image output"
+                            className="max-h-[400px] w-auto rounded-md border border-border"
+                          />
+                        </div>
+                      )}
+                      {!isEmpty &&
+                        !looksLikeImageUrl(decodedMessage) &&
+                        Array.isArray(chat.files) &&
+                        chat.files.some((file: string | { path?: string }) => {
+                          const path =
+                            typeof file === "string" ? file : file?.path;
+                          return (
+                            typeof path === "string" && looksLikeImageUrl(path)
+                          );
+                        }) && (
+                          <div className="mt-2">
+                            <img
+                              src={
+                                chat.files
+                                  .map((file: string | { path?: string }) =>
+                                    typeof file === "string"
+                                      ? file
+                                      : file?.path,
+                                  )
+                                  .find((path: string | undefined) =>
+                                    path ? looksLikeImageUrl(path) : false,
+                                  ) as string
+                              }
+                              alt="image output"
+                              className="max-h-[400px] w-auto rounded-md border border-border"
+                            />
+                          </div>
                         )}
-                        data-testid={`chat-message-${chat.sender_name}-${chatMessage}`}
-                      >
-                        {isEmpty ? EMPTY_INPUT_SEND_MESSAGE : decodedMessage}
-                        {editedFlag}
-                      </div>
                     </>
                   )}
                   {chat.files && (
