@@ -194,7 +194,15 @@ const CustomInputPopover = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
+  const [localValue, setLocalValue] = useState(value || "");
   const memoizedOptions = useMemo(() => new Set<string>(options), [options]);
+
+  // Sync local value when prop value changes from outside
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value || "");
+    }
+  }, [value, isFocused]);
 
   const PopoverContentInput = editNode
     ? PopoverContent
@@ -296,11 +304,12 @@ const CustomInputPopover = ({
               id={id}
               ref={refInput}
               type={!pwdVisible && password ? "password" : "text"}
-              onBlur={() => {
+              onBlur={(e) => {
+                onChange?.(e.target.value);
                 onInputLostFocus?.();
                 setIsFocused(false);
               }}
-              value={disabled ? "" : value || ""}
+              value={disabled ? "" : localValue}
               disabled={disabled}
               required={required}
               className={getInputClassName(
@@ -317,7 +326,7 @@ const CustomInputPopover = ({
               }
               onChange={(e) => {
                 setCursor(e.target.selectionStart);
-                onChange?.(e.target.value);
+                setLocalValue(e.target.value);
               }}
               onKeyDown={(e) => {
                 handleKeyDown?.(e);

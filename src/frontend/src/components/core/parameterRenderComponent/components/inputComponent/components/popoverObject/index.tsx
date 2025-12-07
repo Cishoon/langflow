@@ -42,6 +42,8 @@ const CustomInputPopoverObject = ({
   showOptions,
 }) => {
   const [cursor, setCursor] = useState<number | null>(null);
+  const [localValue, setLocalValue] = useState(value || "");
+  const [isFocused, setIsFocused] = useState(false);
 
   const PopoverContentInput = editNode
     ? PopoverContent
@@ -54,9 +56,22 @@ const CustomInputPopoverObject = ({
     }
   }, [cursor, value]);
 
+  // Sync local value when prop value changes from outside
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value || "");
+    }
+  }, [value, isFocused]);
+
   const handleInputChange = (e) => {
     setCursor(e.target.selectionStart);
+    setLocalValue(e.target.value);
+  };
+
+  const handleInputBlur = (e) => {
+    setIsFocused(false);
     onChange && onChange(e.target.value);
+    onInputLostFocus?.();
   };
 
   return (
@@ -66,7 +81,8 @@ const CustomInputPopoverObject = ({
           id={id}
           ref={refInput}
           type="text"
-          onBlur={onInputLostFocus}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleInputBlur}
           value={
             (selectedOption !== "" || !onChange) && setSelectedOption
               ? options.find((option) => option.id === selectedOption)?.name ||
@@ -79,7 +95,7 @@ const CustomInputPopoverObject = ({
                         options.find((option) => option.id === optionId)?.name,
                     )
                     .join(", ")
-                : value
+                : localValue
           }
           autoFocus={autoFocus}
           disabled={disabled}

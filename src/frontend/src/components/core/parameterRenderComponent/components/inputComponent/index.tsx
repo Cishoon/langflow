@@ -49,6 +49,15 @@ export default function InputComponent({
   const [cursor, setCursor] = useState<number | null>(null);
   const refInput = useRef<HTMLInputElement>(null);
   const [showOptions, setShowOptions] = useState<boolean>(false);
+  const [localValue, setLocalValue] = useState(value || "");
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync local value when prop value changes from outside
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value || "");
+    }
+  }, [value, isFocused]);
 
   useEffect(() => {
     if (disabled && value && onChange && value !== "") {
@@ -75,14 +84,23 @@ export default function InputComponent({
             name={name}
             id={"form-" + id}
             ref={refInput}
-            onBlur={onInputLostFocus}
+            onFocus={() => setIsFocused(true)}
+            onBlur={(e) => {
+              setIsFocused(false);
+              if (onChangeFolderName) {
+                onChangeFolderName(e);
+              } else {
+                onChange && onChange(e.target.value);
+              }
+              onInputLostFocus(e);
+            }}
             autoFocus={autoFocus}
             type={password && !pwdVisible ? "password" : "text"}
-            value={value}
+            value={localValue}
             disabled={disabled}
             required={required}
             className={classNames(
-              password && !pwdVisible && value !== ""
+              password && !pwdVisible && localValue !== ""
                 ? "text-clip password"
                 : "",
               editNode ? "input-edit-node" : "",
@@ -93,16 +111,13 @@ export default function InputComponent({
             placeholder={password && editNode ? "Key" : placeholder}
             onChange={(e) => {
               setCursor(e.target.selectionStart);
-              if (onChangeFolderName) {
-                return onChangeFolderName(e);
-              }
-              onChange && onChange(e.target.value);
+              setLocalValue(e.target.value);
             }}
             onCopy={(e) => {
               e.preventDefault();
             }}
             onKeyDown={(e) => {
-              handleKeyDown(e, value, "");
+              handleKeyDown(e, localValue, "");
               if (blurOnEnter && e.key === "Enter") refInput.current?.blur();
             }}
           />

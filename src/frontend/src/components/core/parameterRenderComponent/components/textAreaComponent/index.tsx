@@ -77,6 +77,7 @@ export default function TextAreaComponent({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const webhookAuthEnable = useUtilityStore((state) => state.webhookAuthEnable);
   const [cursor, setCursor] = useState<number | null>(null);
+  const [localValue, setLocalValue] = useState(value || "");
 
   const isWebhook = useMemo(
     () => nodeInformationMetadata?.nodeType === "webhook",
@@ -116,6 +117,13 @@ export default function TextAreaComponent({
     }
   }, [cursor, value]);
 
+  // Sync local value when prop value changes from outside
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value || "");
+    }
+  }, [value, isFocused]);
+
   const getInputClassName = () => {
     return cn(
       inputClasses.base({ isFocused, password: password! }),
@@ -128,6 +136,11 @@ export default function TextAreaComponent({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCursor(e.target.selectionStart);
+    setLocalValue(e.target.value);
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(false);
     handleOnNewValue({ value: e.target.value });
   };
 
@@ -190,10 +203,10 @@ export default function TextAreaComponent({
     <div className={cn("w-full", disabled && "pointer-events-none")}>
       <Input
         onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onBlur={handleInputBlur}
         id={id}
         data-testid={id}
-        value={disabled ? "" : value}
+        value={disabled ? "" : localValue}
         onChange={handleInputChange}
         disabled={disabled}
         className={getInputClassName()}
