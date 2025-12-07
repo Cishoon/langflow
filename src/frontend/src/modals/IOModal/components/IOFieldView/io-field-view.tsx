@@ -24,6 +24,7 @@ import {
 } from "../../../../utils/reactflowUtils";
 import CsvSelect from "./components/csv-selected";
 import IOFileInput from "./components/file-input";
+import FormInputView from "./components/form-input-view";
 import IoJsonInput from "./components/json-input";
 import IOKeyPairInput from "./components/key-pair-input";
 
@@ -150,6 +151,9 @@ export default function IOFieldView({
                 />
               </>
             );
+
+          case IOInputTypes.FORM:
+            return <FormInputView nodeId={node.id} />;
 
           default:
             return (

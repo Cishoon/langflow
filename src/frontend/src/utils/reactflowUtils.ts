@@ -75,6 +75,10 @@ export function checkChatInput(nodes: Node[]) {
   return nodes.some((node) => node.data.type === "ChatInput");
 }
 
+export function checkFormInput(nodes: Node[]) {
+  return nodes.some((node) => node.data.type === "FormInput");
+}
+
 export function checkWebhookInput(nodes: Node[]) {
   return nodes.some((node) => node.data.type === "Webhook");
 }

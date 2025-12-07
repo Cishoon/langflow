@@ -8,6 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDeleteDeleteFlows } from "@/controllers/API/queries/flows/use-delete-delete-flows";
 import { useGetDownloadFlows } from "@/controllers/API/queries/flows/use-get-download-flows";
 import { ENABLE_MCP } from "@/customization/feature-flags";
+import useUploadFlow from "@/hooks/flows/use-upload-flow";
 import DeleteConfirmationModal from "@/modals/deleteConfirmationModal";
 import useAlertStore from "@/stores/alertStore";
 import { cn } from "@/utils/utils";
@@ -36,8 +37,11 @@ const HeaderComponent = ({
   selectedFlows,
 }: HeaderComponentProps) => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const isMCPEnabled = ENABLE_MCP;
   const setSuccessData = useAlertStore((state) => state.setSuccessData);
+  const setErrorData = useAlertStore((state) => state.setErrorData);
+  const uploadFlow = useUploadFlow();
   // Debounce the setSearch function from the parent
   const debouncedSetSearch = useCallback(
     debounce((value: string) => {
@@ -89,6 +93,21 @@ const HeaderComponent = ({
         },
       },
     );
+  };
+
+  const handleImport = async () => {
+    setIsImporting(true);
+    try {
+      await uploadFlow({ isComponent: flowType === "components" });
+      setSuccessData({ title: "Flow imported successfully" });
+    } catch (error) {
+      setErrorData({
+        title: "Failed to import flow",
+        list: [error instanceof Error ? error.message : "Unknown error"],
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
@@ -222,6 +241,26 @@ const HeaderComponent = ({
                     </Button>
                   </DeleteConfirmationModal>
                 </div>
+                <ShadTooltip content="Import Flow" side="bottom">
+                  <Button
+                    variant="outline"
+                    size="iconMd"
+                    className="mr-2 px-2.5 !text-mmd"
+                    onClick={handleImport}
+                    loading={isImporting}
+                    id="import-flow-btn"
+                    data-testid="import-flow-btn"
+                  >
+                    <ForwardedIconComponent
+                      name="Upload"
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    />
+                    <span className="hidden whitespace-nowrap font-semibold md:inline">
+                      Import
+                    </span>
+                  </Button>
+                </ShadTooltip>
                 <ShadTooltip content="New Flow" side="bottom">
                   <Button
                     variant="default"

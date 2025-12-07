@@ -17,6 +17,7 @@ import useFlowStore from "../../../../../stores/flowStore";
 import type { ChatMessageType } from "../../../../../types/chat";
 import type { chatViewProps } from "../../../../../types/components";
 import FlowRunningSqueleton from "../../flow-running-squeleton";
+import FormChatInput from "../chatInput/components/form-chat-input";
 import useDragAndDrop from "../chatInput/hooks/use-drag-and-drop";
 import ChatMessage from "../chatMessage/chat-message";
 import sortSenderMessages from "../helpers/sort-sender-messages";
@@ -59,6 +60,8 @@ export default function ChatView({
   const inputTypes = inputs.map((obj) => obj.type);
   const hasAudioInput = inputTypes.includes("AudioInput");
   const hasChatInput = inputTypes.includes("ChatInput");
+  const hasFormInput = inputTypes.includes("FormInput");
+  const formInput = inputs.find((input) => input.type === "FormInput");
   const updateFlowPool = useFlowStore((state) => state.updateFlowPool);
   const setChatValueStore = useUtilityStore((state) => state.setChatValueStore);
   const isTabHidden = useTabVisibility();
@@ -232,19 +235,30 @@ export default function ChatView({
       </StickToBottom.Content>
 
       <div className="m-auto w-full max-w-[768px] md:w-5/6">
-        <CustomChatInput
-          playgroundPage={!!playgroundPage}
-          noInput={!hasChatInput && !hasAudioInput}
-          audioOnly={hasAudioInput && !hasChatInput}
-          sendMessage={async ({ repeat, files }) => {
-            await sendMessage({ repeat, files });
-            track("Playground Message Sent");
-          }}
-          inputRef={ref}
-          files={files}
-          setFiles={setFiles}
-          isDragging={isDragging}
-        />
+        {hasFormInput && formInput ? (
+          <FormChatInput
+            nodeId={formInput.id}
+            sendMessage={async ({ repeat, files }) => {
+              await sendMessage({ repeat, files });
+              track("Playground Form Submitted");
+            }}
+            isBuilding={isBuilding}
+          />
+        ) : (
+          <CustomChatInput
+            playgroundPage={!!playgroundPage}
+            noInput={!hasChatInput && !hasAudioInput}
+            audioOnly={hasAudioInput && !hasChatInput}
+            sendMessage={async ({ repeat, files }) => {
+              await sendMessage({ repeat, files });
+              track("Playground Message Sent");
+            }}
+            inputRef={ref}
+            files={files}
+            setFiles={setFiles}
+            isDragging={isDragging}
+          />
+        )}
       </div>
     </StickToBottom>
   );

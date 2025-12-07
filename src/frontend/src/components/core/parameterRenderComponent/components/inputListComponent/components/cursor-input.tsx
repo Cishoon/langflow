@@ -33,12 +33,15 @@ export const CursorInput = forwardRef<HTMLInputElement, CursorInputProps>(
     // Local state for input value to handle cursor position
     const [localValue, setLocalValue] = useState<string>(value);
     const [cursor, setCursor] = useState<number | null>(null);
+    const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Update local value when prop changes
+    // Update local value when prop changes (only when not focused)
     useEffect(() => {
-      setLocalValue(value);
-    }, [value]);
+      if (!isFocused) {
+        setLocalValue(value);
+      }
+    }, [value, isFocused]);
 
     // Handle cursor position restoration
     useEffect(() => {
@@ -50,14 +53,16 @@ export const CursorInput = forwardRef<HTMLInputElement, CursorInputProps>(
     const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
       setCursor(e.target.selectionStart);
       setLocalValue(e.target.value);
-      onChange(e.target.value);
     };
 
-    const handleInputBlur = () => {
+    const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
+      onChange(e.target.value);
       onBlur?.();
     };
 
     const handleInputFocus = () => {
+      setIsFocused(true);
       onFocus?.();
     };
 

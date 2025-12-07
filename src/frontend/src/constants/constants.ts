@@ -698,6 +698,8 @@ export const INPUT_TYPES = new Set([
   "AudioInput",
   "ImageInput",
   "ImageOutput",
+  "FormInput",
+
   // "TextInput",
   // "KeyPairInput",
   // "JsonInput",
