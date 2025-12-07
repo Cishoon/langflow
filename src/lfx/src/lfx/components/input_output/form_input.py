@@ -44,6 +44,7 @@ class FormInput(ChatComponent):
                     "label": "Search Query",
                     "name": "query",
                     "type": "text",
+                    "default": "",
                     "placeholder": "Enter your search query...",
                     "required": True,
                     "options": "",
@@ -53,6 +54,7 @@ class FormInput(ChatComponent):
                 {"name": "label", "display_name": "Label", "type": "str"},
                 {"name": "name", "display_name": "Field Name", "type": "str"},
                 {"name": "type", "display_name": "Type", "type": "str"},
+                {"name": "default", "display_name": "Default", "type": "str"},
                 {"name": "placeholder", "display_name": "Placeholder", "type": "str"},
                 {"name": "required", "display_name": "Required", "type": "bool"},
                 {"name": "options", "display_name": "Options", "type": "str"},
@@ -107,6 +109,7 @@ class FormInput(ChatComponent):
 
                 field_label = field.get("label", field_internal_name)
                 field_type = field.get("type", "text")
+                field_default = field.get("default", "")
                 field_placeholder = field.get("placeholder", "")
                 field_required = field.get("required", False)
                 field_options = field.get("options", "")
@@ -122,18 +125,20 @@ class FormInput(ChatComponent):
 
                 if field_type == "select" and field_options:
                     options_list = [opt.strip() for opt in field_options.split(",") if opt.strip()]
+                    default_value = field_default if field_default in options_list else (options_list[0] if options_list else "")
                     build_config[field_key] = {
                         **base_config,
                         "type": "str",
                         "options": options_list,
-                        "value": options_list[0] if options_list else "",
+                        "value": default_value,
                     }
                 elif field_type == "textarea":
-                    build_config[field_key] = {**base_config, "type": "str", "multiline": True, "value": ""}
+                    build_config[field_key] = {**base_config, "type": "str", "multiline": True, "value": field_default}
                 elif field_type == "number":
-                    build_config[field_key] = {**base_config, "type": "int", "value": 0, "input_types": []}
+                    default_num = int(field_default) if field_default and field_default.isdigit() else 0
+                    build_config[field_key] = {**base_config, "type": "int", "value": default_num, "input_types": []}
                 else:
-                    build_config[field_key] = {**base_config, "type": "str", "value": ""}
+                    build_config[field_key] = {**base_config, "type": "str", "value": field_default}
 
         return build_config
 
