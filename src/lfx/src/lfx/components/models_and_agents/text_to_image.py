@@ -265,6 +265,13 @@ class TextToImageComponent(Component):
         display_text: str | None = None
 
         if image_url:
+            # Fix URL encoding issue: '+' in query params (e.g., Signature) must be encoded as %2B
+            # Otherwise browsers interpret '+' as space, causing signature mismatch errors
+            if "?" in image_url:
+                base, query = image_url.split("?", 1)
+                # Encode '+' in query string to prevent it being interpreted as space
+                query = query.replace("+", "%2B")
+                image_url = f"{base}?{query}"
             files.append(image_url)
             display_text = image_url
 
