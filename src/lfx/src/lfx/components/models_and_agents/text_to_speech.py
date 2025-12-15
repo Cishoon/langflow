@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import tempfile
 from typing import Any
-from uuid import uuid4
 
 import httpx
 from pydantic.v1 import SecretStr
@@ -11,18 +9,16 @@ from lfx.custom.custom_component.component import Component
 from lfx.io import DropdownInput, MessageInput, MessageTextInput, Output, SecretStrInput, StrInput
 from lfx.schema.data import Data
 from lfx.schema.message import Message
-from lfx.services.deps import get_storage_service
 
-DEFAULT_TTS_MODEL = "gpt-4o-mini-tts"
-DEFAULT_VOICE = "alloy"
-DEFAULT_API_BASE = "https://api.openai.com/v1"
-
-AUDIO_FORMATS = ["mp3", "wav", "flac"]
+DEFAULT_TTS_MODEL = "qwen3-tts-flash"
+DEFAULT_VOICE = "Cherry"
+DEFAULT_ENDPOINT = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+DEFAULT_LANGUAGE = "Chinese"
 
 
 class TextToSpeechComponent(Component):
     display_name = "Text to Speech"
-    description = "Convert text to spoken audio using OpenAI-compatible TTS APIs."
+    description = "Convert text to spoken audio using DashScope/Qwen TTS."
     icon = "AudioWaveform"
     name = "TextToSpeech"
 
@@ -42,36 +38,33 @@ class TextToSpeechComponent(Component):
         SecretStrInput(
             name="api_key",
             display_name="API Key",
-            info="OpenAI or OpenAI-compatible API key.",
+            info="DashScope API key.",
             required=True,
         ),
         StrInput(
-            name="api_base",
-            display_name="API Base URL",
-            info="Override the API base URL for OpenAI-compatible providers.",
-            value=DEFAULT_API_BASE,
-            advanced=True,
+            name="endpoint",
+            display_name="Endpoint",
+            info="Full endpoint for DashScope TTS.",
+            value=DEFAULT_ENDPOINT,
         ),
         StrInput(
             name="model_name",
             display_name="Model",
             info="TTS model to use.",
             value=DEFAULT_TTS_MODEL,
-            advanced=True,
         ),
         DropdownInput(
             name="voice",
             display_name="Voice",
-            options=["alloy", "shimmer", "verse"],
+            options=["Cherry", "Bob", "Tony", "Lily", "Jack"],
             value=DEFAULT_VOICE,
             info="Voice to use for synthesis.",
         ),
-        DropdownInput(
-            name="audio_format",
-            display_name="Audio Format",
-            options=AUDIO_FORMATS,
-            value="mp3",
-            info="Output audio format.",
+        StrInput(
+            name="language_type",
+            display_name="Language",
+            info="Language type, e.g., Chinese / English.",
+            value=DEFAULT_LANGUAGE,
         ),
     ]
 
@@ -109,42 +102,21 @@ class TextToSpeechComponent(Component):
         msg = "No text provided. Please set Text or connect a Message Input."
         raise ValueError(msg)
 
-    async def _persist_bytes(self, data: bytes, *, suffix: str) -> tuple[str, str]:
-        """Save bytes to storage service if available; fallback to temp file.
-
-        Returns:
-            logical_path: Path stored on storage service (or temp path)
-            absolute_path: Resolved filesystem path
-        """
-        storage_service = get_storage_service()
-        flow_id = str(getattr(self.graph, "flow_id", "") or "default")
-        file_name = f"tts-{uuid4().hex}{suffix}"
-
-        if storage_service:
-            await storage_service.save_file(flow_id, file_name, data)
-            logical_path = f"{flow_id}/{file_name}"
-            resolved_path = storage_service.resolve_component_path(logical_path)
-            return logical_path, resolved_path
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            tmp_file.write(data)
-            tmp_path = tmp_file.name
-        return tmp_path, tmp_path
-
     async def synthesize(self) -> Message:
         text = self._get_text()
         api_key = self._get_api_key()
-        api_base = (self.api_base or DEFAULT_API_BASE).rstrip("/")
         model_name = self.model_name or DEFAULT_TTS_MODEL
-        audio_format = self.audio_format or "mp3"
         voice = self.voice or DEFAULT_VOICE
+        language = self.language_type or DEFAULT_LANGUAGE
+        endpoint = self.endpoint or DEFAULT_ENDPOINT
 
-        url = f"{api_base}/audio/speech"
         payload: dict[str, Any] = {
             "model": model_name,
-            "input": text,
-            "voice": voice,
-            "response_format": audio_format,
+            "input": {
+                "text": text,
+                "voice": voice,
+                "language_type": language,
+            },
         }
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -153,30 +125,50 @@ class TextToSpeechComponent(Component):
 
         try:
             async with httpx.AsyncClient(timeout=120) as client:
-                response = await client.post(url, json=payload, headers=headers)
+                response = await client.post(endpoint, json=payload, headers=headers)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             status = e.response.status_code if e.response else "unknown"
             body = e.response.text if e.response is not None else "no response body"
             msg = f"Text-to-speech request failed: status={status}; response={body[:500]}"
             raise RuntimeError(msg) from e
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             msg = f"Text-to-speech request failed: {e}"
             raise RuntimeError(msg) from e
 
-        audio_bytes = response.content
-        if not audio_bytes:
-            msg = "Text-to-speech succeeded but returned empty audio."
+        result = response.json()
+        audio_url = (
+            result.get("output", {}).get("audio", {}).get("url")
+            if isinstance(result, dict)
+            else None
+        )
+        audio_data_b64 = (
+            result.get("output", {}).get("audio", {}).get("data")
+            if isinstance(result, dict)
+            else None
+        )
+
+        files: list[str] = []
+        display_text: str | None = None
+
+        if audio_url:
+            files.append(audio_url)
+            display_text = audio_url
+        elif audio_data_b64:
+            data_uri = f"data:audio/wav;base64,{audio_data_b64}"
+            files.append(data_uri)
+            display_text = data_uri
+        else:
+            msg = "Text-to-speech succeeded but returned no audio URL or data."
             raise RuntimeError(msg)
 
-        logical_path, resolved_path = await self._persist_bytes(audio_bytes, suffix=f".{audio_format}")
-
         message = await Message.create(
-            text=text,
-            files=[logical_path],
+            text=display_text or text,
+            files=files,
         )
         message.properties.icon = "AudioWaveform"
         message.category = "message"
+        message.data["audio_url"] = files[0]
 
-        self.status = f"Generated audio at {resolved_path}"
+        self.status = f"Generated audio {files[0]}"
         return message
