@@ -22,6 +22,8 @@ import FileCardWrapper from "./components/file-card-wrapper";
 import { EditMessageButton } from "./components/message-options";
 import { convertFiles } from "./helpers/convert-files";
 
+type FileLike = string | { path?: string; type?: string; name?: string };
+
 const looksLikeImageUrl = (value: string): boolean => {
   if (!value) return false;
   const lower = value.toLowerCase();
@@ -30,6 +32,27 @@ const looksLikeImageUrl = (value: string): boolean => {
   return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"].some((ext) =>
     base.endsWith(ext),
   );
+};
+
+const looksLikeAudioUrl = (value: string): boolean => {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  if (lower.startsWith("data:audio/")) return true;
+  const base = lower.split("?")[0] || lower;
+  return [".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac", ".wma", ".opus", ".webm", ".amr"].some(
+    (ext) => base.endsWith(ext),
+  );
+};
+
+const getFirstMatchingFile = (
+  files: FileLike[] | undefined,
+  matcher: (path: string) => boolean,
+): string | undefined => {
+  if (!Array.isArray(files)) return undefined;
+  const paths = files
+    .map((file) => (typeof file === "string" ? file : file?.path))
+    .filter((p): p is string => typeof p === "string");
+  return paths.find((p) => matcher(p));
 };
 
 export default function ChatMessage({
@@ -58,6 +81,8 @@ export default function ChatMessage({
   const isBuilding = useFlowStore((state) => state.isBuilding);
 
   const isAudioMessage = chat.category === "audio";
+  const firstImageUrl = getFirstMatchingFile(chat.files as FileLike[] | undefined, looksLikeImageUrl);
+  const firstAudioUrl = getFirstMatchingFile(chat.files as FileLike[] | undefined, looksLikeAudioUrl);
 
   useEffect(() => {
     const chatMessageString = chat.message ? chat.message.toString() : "";
@@ -368,6 +393,16 @@ export default function ChatMessage({
                                 }}
                                 onCancel={() => setEditMessage(false)}
                               />
+                            ) : looksLikeAudioUrl(decodedMessage) ? (
+                              <div className="mt-2">
+                                <audio
+                                  controls
+                                  src={decodedMessage}
+                                  className="max-w-full"
+                                >
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
                             ) : looksLikeImageUrl(decodedMessage) ? (
                               <div className="mt-2">
                                 <img
@@ -387,38 +422,29 @@ export default function ChatMessage({
                             )}
                             {!isEmpty &&
                               !looksLikeImageUrl(decodedMessage) &&
-                              Array.isArray(chat.files) &&
-                              chat.files.some(
-                                (file: string | { path?: string }) => {
-                                  const path =
-                                    typeof file === "string"
-                                      ? file
-                                      : file?.path;
-                                  return (
-                                    typeof path === "string" &&
-                                    looksLikeImageUrl(path)
-                                  );
-                                },
-                              ) && (
+                              !looksLikeAudioUrl(decodedMessage) &&
+                              firstImageUrl && (
                                 <div className="mt-2">
                                   <img
-                                    src={
-                                      chat.files
-                                        .map(
-                                          (file: string | { path?: string }) =>
-                                            typeof file === "string"
-                                              ? file
-                                              : file?.path,
-                                        )
-                                        .find((path: string | undefined) =>
-                                          path
-                                            ? looksLikeImageUrl(path)
-                                            : false,
-                                        ) as string
-                                    }
+                                    src={firstImageUrl}
                                     alt="image output"
                                     className="max-h-[400px] w-auto rounded-md border border-border"
                                   />
+                                </div>
+                              )}
+                            {!isEmpty &&
+                              !looksLikeAudioUrl(decodedMessage) &&
+                              !looksLikeImageUrl(decodedMessage) &&
+                              !firstImageUrl &&
+                              firstAudioUrl && (
+                                <div className="mt-2">
+                                  <audio
+                                    controls
+                                    src={firstAudioUrl}
+                                    className="max-w-full"
+                                  >
+                                    Your browser does not support the audio element.
+                                  </audio>
                                 </div>
                               )}
                           </div>
@@ -442,7 +468,8 @@ export default function ChatMessage({
                     />
                   ) : (
                     <>
-                      {!looksLikeImageUrl(decodedMessage) && (
+                      {!looksLikeImageUrl(decodedMessage) &&
+                        !looksLikeAudioUrl(decodedMessage) && (
                         <div
                           className={cn(
                             "w-full items-baseline whitespace-pre-wrap break-words text-sm font-normal",
@@ -452,6 +479,17 @@ export default function ChatMessage({
                         >
                           {isEmpty ? EMPTY_INPUT_SEND_MESSAGE : decodedMessage}
                           {editedFlag}
+                        </div>
+                      )}
+                      {!isEmpty && looksLikeAudioUrl(decodedMessage) && (
+                        <div className="mt-2">
+                          <audio
+                            controls
+                            src={decodedMessage}
+                            className="max-w-full"
+                          >
+                            Your browser does not support the audio element.
+                          </audio>
                         </div>
                       )}
                       {!isEmpty && looksLikeImageUrl(decodedMessage) && (
@@ -465,30 +503,29 @@ export default function ChatMessage({
                       )}
                       {!isEmpty &&
                         !looksLikeImageUrl(decodedMessage) &&
-                        Array.isArray(chat.files) &&
-                        chat.files.some((file: string | { path?: string }) => {
-                          const path =
-                            typeof file === "string" ? file : file?.path;
-                          return (
-                            typeof path === "string" && looksLikeImageUrl(path)
-                          );
-                        }) && (
+                        !looksLikeAudioUrl(decodedMessage) &&
+                        firstImageUrl && (
                           <div className="mt-2">
                             <img
-                              src={
-                                chat.files
-                                  .map((file: string | { path?: string }) =>
-                                    typeof file === "string"
-                                      ? file
-                                      : file?.path,
-                                  )
-                                  .find((path: string | undefined) =>
-                                    path ? looksLikeImageUrl(path) : false,
-                                  ) as string
-                              }
+                              src={firstImageUrl}
                               alt="image output"
                               className="max-h-[400px] w-auto rounded-md border border-border"
                             />
+                          </div>
+                        )}
+                      {!isEmpty &&
+                        !looksLikeImageUrl(decodedMessage) &&
+                        !looksLikeAudioUrl(decodedMessage) &&
+                        !firstImageUrl &&
+                        firstAudioUrl && (
+                          <div className="mt-2">
+                            <audio
+                              controls
+                              src={firstAudioUrl}
+                              className="max-w-full"
+                            >
+                              Your browser does not support the audio element.
+                            </audio>
                           </div>
                         )}
                     </>
